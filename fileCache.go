@@ -2,7 +2,7 @@ package fcache
 
 import (
 	"errors"
-	"fcache/coder"
+	"github.com/daihaoxiaofei/fcache/coder"
 	"io/ioutil"
 	"os"
 	"path"
@@ -24,10 +24,11 @@ type RememberFunc func() interface{}
 // 为了调用方便
 var DefaultFC = NewFC(defaultPath)
 var Remember = DefaultFC.Remember
+var Remome = DefaultFC.Remome
 
 func NewFC(dirPath string) *FileCache {
 	return &FileCache{
-		code:    coder.NewJsonCode(),
+		code:    coder.NewJsonCoder(),
 		DirPath: dirPath,
 		Suffix:  `.db`,
 	}
@@ -61,7 +62,7 @@ func (f *FileCache) Remember(key string, out interface{}, fun RememberFunc) (err
 			return
 		}
 		if result == nil {
-			file.Close() // 关闭文件
+			file.Close()                                      // 关闭文件
 			_ = os.Remove(path.Join(f.DirPath, key+f.Suffix)) // 删除文件
 			return errors.New(`函数返回为空`)
 		}

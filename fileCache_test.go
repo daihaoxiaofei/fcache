@@ -1,7 +1,6 @@
 package fcache
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -13,12 +12,35 @@ type User struct {
 func TestRemember(t *testing.T) {
 	var result User
 	Remember(`ss`, &result, func() interface{} {
-		fmt.Println(`重新获取`)
 		return User{
 			Name: `xiaofei`,
 			Age:  13,
 		}
 	})
+	if result.Name != `xiaofei` {
+		t.Fatal(`err: Remember first`)
+	}
 
-	fmt.Println(`result: `, result)
+	Remember(`ss`, &result, func() interface{} {
+		return User{
+			Name: `xiaofei`,
+			Age:  31,
+		}
+	})
+	if result.Age != 13 {
+		t.Fatal(`err: Remember too`)
+	}
+
+	Remome(`ss`)
+	Remember(`ss`, &result, func() interface{} {
+		return User{
+			Name: `xiaofei`,
+			Age:  31,
+		}
+	})
+	if result.Age != 31 {
+		t.Fatal(`err: Remember three`)
+	}
+
+
 }

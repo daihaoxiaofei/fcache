@@ -1,4 +1,4 @@
-module fcache
+module github.com/daihaoxiaofei/fcache
 
 go 1.16
 

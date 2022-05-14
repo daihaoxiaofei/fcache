@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 )
 
-type JsonCode struct {
+type JsonCoder struct {
 }
 
-var _ Coder = (*JsonCode)(nil)
+var _ Coder = (*JsonCoder)(nil)
 
-func NewJsonCode() *JsonCode {
-	return &JsonCode{}
+func NewJsonCoder() *JsonCoder {
+	return &JsonCoder{}
 }
 
-func (j *JsonCode) EnCode(i interface{}) ([]byte, error) {
+func (j *JsonCoder) EnCode(i interface{}) ([]byte, error) {
 	result, err := json.Marshal(i)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (j *JsonCode) EnCode(i interface{}) ([]byte, error) {
 	return result, nil
 }
 
-func (j *JsonCode) DeCode(in []byte, out interface{}) (err error) {
+func (j *JsonCoder) DeCode(in []byte, out interface{}) (err error) {
 	err = json.Unmarshal(in, out)
 	if err != nil {
 		return err
