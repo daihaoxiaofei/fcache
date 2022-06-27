@@ -1,6 +1,7 @@
 package fcache
 
 import (
+	"os"
 	"testing"
 )
 
@@ -10,37 +11,37 @@ type User struct {
 }
 
 func TestRemember(t *testing.T) {
+	os.Remove(`cache/ss.db`)
 	var result User
-	Remember(`ss`, &result, func() interface{} {
+	err := Remember(`ss`, &result, func() interface{} {
 		return User{
 			Name: `xiaofei`,
 			Age:  13,
 		}
 	})
-	if result.Name != `xiaofei` {
-		t.Fatal(`err: Remember first`)
+	if err != nil || result.Name != `xiaofei` {
+		t.Fatal(`err: Remember first`, err)
 	}
 
-	Remember(`ss`, &result, func() interface{} {
+	err = Remember(`ss`, &result, func() interface{} {
 		return User{
 			Name: `xiaofei`,
 			Age:  31,
 		}
 	})
-	if result.Age != 13 {
-		t.Fatal(`err: Remember too`)
+	if err != nil || result.Age != 13 {
+		t.Fatal(`err: Remember too`, result, err)
 	}
 
-	Remome(`ss`)
-	Remember(`ss`, &result, func() interface{} {
+	Remove(`ss`)
+	err = Remember(`ss`, &result, func() interface{} {
 		return User{
 			Name: `xiaofei`,
-			Age:  31,
+			Age:  13,
 		}
 	})
-	if result.Age != 31 {
-		t.Fatal(`err: Remember three`)
+	if err != nil || result.Age != 13 {
+		t.Fatal(`err: Remember three`, err)
 	}
-
 
 }

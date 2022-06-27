@@ -1,77 +1,64 @@
 package fcache
 
 import (
-	"errors"
 	"github.com/daihaoxiaofei/fcache/coder"
-	"io/ioutil"
-	"os"
-	"path"
+	"github.com/daihaoxiaofei/fcache/storage"
+	"reflect"
 )
 
 const (
 	defaultPath = `cache`
 )
 
-// expanded-name
+// FileCache expanded-name
 type FileCache struct {
-	code    coder.Coder
-	DirPath string
+	coder   coder.Coder
+	Storage storage.Storage
 	Suffix  string // 后缀名
 	// mu      sync.Mutex // 多线程调用时加锁会影响效率 和 意外情况全局锁死(如嵌套缓存) 所以得靠调用者自己控制了
 }
 type RememberFunc func() interface{}
 
-// 为了调用方便
 var DefaultFC = NewFC(defaultPath)
 var Remember = DefaultFC.Remember
-var Remome = DefaultFC.Remome
+var Remove = DefaultFC.Remove
 
 func NewFC(dirPath string) *FileCache {
 	return &FileCache{
-		code:    coder.NewJsonCoder(),
-		DirPath: dirPath,
+		coder:   coder.NewGobCode(),
+		Storage: storage.NewFileStore(dirPath),
 		Suffix:  `.db`,
 	}
 }
 
-// 清除缓存
-func (f *FileCache) Remome(key string) {
-	_ = os.Remove(path.Join(f.DirPath, key+f.Suffix))
+// Remove 清除缓存
+func (f *FileCache) Remove(key string) {
+	_ = f.Storage.Remove(key + f.Suffix)
 }
 
 func (f *FileCache) Remember(key string, out interface{}, fun RememberFunc) (err error) {
-	if _, err := os.Stat(f.DirPath); err != nil {
-		err := os.MkdirAll(f.DirPath, os.ModePerm)
-		if err != nil {
-			panic(f.DirPath + ` 路径创建失败 Mkdir err: ` + err.Error())
-		}
-	}
-	file, err := os.OpenFile(path.Join(f.DirPath, key+f.Suffix), os.O_RDWR|os.O_CREATE, os.ModePerm)
+	err = f.Storage.Open(key + f.Suffix)
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer f.Storage.Close()
 
-	result, err := ioutil.ReadAll(file)
+	result, err := f.Storage.Read()
 	if err != nil {
 		return
 	}
+
 	if len(result) == 0 {
-		result, err = f.code.EnCode(fun())
-		if err != nil {
-			return
-		}
-		if result == nil {
-			file.Close()                                      // 关闭文件
-			_ = os.Remove(path.Join(f.DirPath, key+f.Suffix)) // 删除文件
-			return errors.New(`函数返回为空`)
-		}
-		_, err = file.Write(result)
-		if err != nil {
-			return
-		}
-	}
-	f.code.DeCode(result, out)
+		res := fun()
+		// 将res赋值给out
+		reflect.ValueOf(out).Elem().Set(reflect.ValueOf(res))
 
-	return
+		result, err = f.coder.EnCode(res)
+		if err != nil {
+			return
+		}
+		err = f.Storage.Write(result)
+		return
+	}
+	return f.coder.DeCode(result, out)
 }
